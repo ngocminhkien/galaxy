@@ -1,0 +1,1035 @@
+/* ==========================================================================
+   COSMOS // OMNI-HORIZON 2.0 — SCI-FI HOLOGRAPHIC STYLESHEET
+   Subnautica PDA Banner, Flight Combat HUD, 3D Damage Log, Neon Cybernetics
+   ========================================================================== */
+
+:root {
+  --neon-cyan: #00e5ff;
+  --neon-cyan-glow: rgba(0, 229, 255, 0.4);
+  --neon-amber: #ffb300;
+  --neon-amber-glow: rgba(255, 179, 0, 0.4);
+  --neon-crimson: #ff1744;
+  --neon-crimson-glow: rgba(255, 23, 68, 0.45);
+  --neon-violet: #7c4dff;
+  --neon-green: #10b981;
+
+  --hud-bg: rgba(6, 14, 28, 0.9);
+  --hud-border: rgba(0, 229, 255, 0.45);
+  --hud-card-bg: rgba(10, 24, 46, 0.75);
+
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-display: 'Orbitron', 'Cinzel', -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #020208;
+  color: #e0f7fa;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+#canvasContainer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+
+.sci-fi-ui {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 28px;
+}
+
+.interactive {
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   SUBNAUTICA PDA SUBTITLE BANNER (GIỌNG NÓI & PHỤ ĐỀ SUBNAUTICA)
+   ========================================================================== */
+.pda-subtitle-banner {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(4, 16, 32, 0.92);
+  border: 1.5px solid var(--neon-cyan);
+  box-shadow: 0 0 25px var(--neon-cyan-glow), inset 0 0 15px rgba(0, 229, 255, 0.1);
+  padding: 10px 24px;
+  border-radius: 6px;
+  backdrop-filter: blur(20px);
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 780px;
+}
+
+.pda-subtitle-banner.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pda-icon-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-right: 1px solid rgba(0, 229, 255, 0.3);
+  padding-right: 14px;
+}
+
+.pda-wave-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+  animation: pdaPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes pdaPulse {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+.pda-speaker-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--neon-cyan);
+  white-space: nowrap;
+}
+
+.pda-subtitle-text {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   BẢNG NHẬT KÝ CHIẾN SỰ & BIẾN CỐ THIÊN THỂ BÊN TRÁI (COMBAT DAMAGE LOG)
+   ========================================================================== */
+.combat-log-container {
+  position: absolute;
+  top: 90px;
+  left: 28px;
+  width: 320px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  border-radius: 10px;
+  backdrop-filter: blur(20px);
+  padding: 14px 16px;
+  max-height: calc(100vh - 230px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 15;
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.15);
+}
+
+.combat-log-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--neon-amber);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.log-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pdaPulse 2s infinite ease-in-out;
+}
+
+.combat-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.combat-log-list::-webkit-scrollbar {
+  width: 3px;
+}
+.combat-log-list::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+}
+
+.log-entry {
+  background: var(--hud-card-bg);
+  border-left: 3px solid var(--neon-cyan);
+  padding: 8px 10px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeIn 0.3s ease;
+}
+
+.log-entry.danger {
+  border-left-color: var(--neon-crimson);
+}
+
+.log-entry.fatal {
+  border-left-color: #ff0055;
+  background: rgba(255, 0, 85, 0.15);
+}
+
+.log-entry.warning {
+  border-left-color: var(--neon-amber);
+}
+
+.log-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #80deea;
+}
+
+.log-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.log-desc {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #b2ebf2;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   BUỒNG LÁI & HUD CHIẾN ĐẤU (FLIGHT COMBAT HUD)
+   ========================================================================== */
+.flight-hud-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  display: none;
+}
+
+/* Hồng tâm ngắm bắn trung tâm */
+.flight-center-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reticle-circle {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgba(0, 229, 255, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 15px var(--neon-cyan-glow);
+}
+
+.reticle-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+/* Khung khóa mục tiêu tên lửa tự động (Homing Missile Lock Diamond) */
+.hud-lock-reticle {
+  position: absolute;
+  top: -45px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-lock-reticle.locked {
+  display: flex;
+}
+
+.lock-diamond {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--neon-crimson);
+  transform: rotate(45deg);
+  box-shadow: 0 0 15px var(--neon-crimson);
+  animation: lockPulse 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes lockPulse {
+  from { transform: rotate(45deg) scale(0.9); }
+  to { transform: rotate(45deg) scale(1.15); }
+}
+
+.lock-tag {
+  background: rgba(255, 23, 68, 0.9);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Cụm thanh Máu & Giáp của Phi thuyền */
+.flight-bars-panel {
+  position: absolute;
+  bottom: 85px;
+  left: 40px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  padding: 12px 18px;
+  border-radius: 8px;
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 280px;
+}
+
+.bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #80deea;
+}
+
+.hud-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hud-bar-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.15s ease;
+}
+
+.shield-fill {
+  background: linear-gradient(90deg, #00e5ff, #00b0ff);
+  box-shadow: 0 0 8px #00e5ff;
+}
+
+.hull-fill {
+  background: linear-gradient(90deg, #10b981, #059669);
+  box-shadow: 0 0 8px #10b981;
+}
+
+/* Đồng hồ vận tốc & Tên lửa bên góc phải */
+.flight-weapon-panel {
+  position: absolute;
+  bottom: 85px;
+  right: 40px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  padding: 12px 20px;
+  border-radius: 8px;
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 250px;
+}
+
+.telemetry-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tel-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #80deea;
+  letter-spacing: 1.5px;
+}
+
+.tel-val {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+#playerCombatScore {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--neon-amber);
+}
+
+/* Hướng dẫn phím điều khiển */
+.flight-controls-hint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(4, 12, 24, 0.9);
+  border: 1px solid var(--neon-cyan);
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #b2ebf2;
+  white-space: nowrap;
+  box-shadow: 0 0 15px var(--neon-cyan-glow);
+}
+
+.flight-controls-hint strong {
+  color: #ffffff;
+}
+
+/* NÚT LÁI CHIẾN HẠM ĐẶC BIỆT TRÊN EVENT DECK */
+.player-ship-btn {
+  background: linear-gradient(135deg, #00b0ff, #7c4dff) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border-color: #00e5ff !important;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4) !important;
+  animation: pulseShipBtn 1.8s infinite alternate !important;
+}
+
+@keyframes pulseShipBtn {
+  from { transform: scale(1); box-shadow: 0 0 12px rgba(0, 229, 255, 0.4); }
+  to { transform: scale(1.06); box-shadow: 0 0 24px rgba(124, 77, 255, 0.7); }
+}
+
+/* ==========================================================================
+   TOP BAR & THANH ĐIỀU HƯỚNG
+   ========================================================================== */
+.top-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1700px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.brand-radar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  padding: 8px 18px;
+  border-radius: 8px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 0 20px var(--neon-cyan-glow);
+}
+
+.radar-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--neon-cyan);
+  border-top-color: transparent;
+  animation: radarSpin 2s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+@keyframes radarSpin {
+  to { transform: rotate(360deg); }
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--neon-cyan);
+}
+
+.brand-subtitle {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: #80deea;
+  letter-spacing: 1px;
+}
+
+.scale-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  padding: 5px 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(16px);
+}
+
+.scale-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #b2ebf2;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.scale-btn:hover {
+  background: rgba(0, 229, 255, 0.15);
+  color: #ffffff;
+}
+
+.scale-btn.active {
+  background: var(--neon-cyan);
+  color: #04101e;
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 14px var(--neon-cyan-glow);
+}
+
+.controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-controller {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  padding: 5px 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(16px);
+}
+
+.speed-btn {
+  background: transparent;
+  border: none;
+  color: #80deea;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.speed-btn:hover { background: rgba(0, 229, 255, 0.15); }
+.speed-btn.active { background: rgba(0, 229, 255, 0.35); color: #ffffff; font-weight: 700; }
+
+.hud-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  color: var(--neon-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  transition: all 0.25s;
+}
+
+.hud-icon-btn:hover {
+  background: rgba(0, 229, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px var(--neon-cyan-glow);
+}
+
+.hud-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ==========================================================================
+   BẢNG HUD HOLOGRAM THÔNG TIN THIÊN THỂ (HOLO-TERMINAL)
+   ========================================================================== */
+.holo-hud-panel {
+  position: absolute;
+  top: 90px;
+  right: 28px;
+  width: 420px;
+  background: var(--hud-bg);
+  border: 1.5px solid var(--hud-border);
+  border-radius: 12px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 0 35px rgba(0, 229, 255, 0.25), inset 0 0 20px rgba(0, 229, 255, 0.08);
+  padding: 24px;
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  pointer-events: auto;
+  animation: panelSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.holo-hud-panel.active {
+  display: flex;
+}
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.hud-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.25);
+  padding-bottom: 12px;
+}
+
+.hud-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-target-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--neon-amber);
+}
+
+.hud-name {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  text-shadow: 0 0 12px var(--neon-cyan);
+}
+
+.hud-type {
+  font-size: 0.78rem;
+  color: #80deea;
+  font-style: italic;
+}
+
+.hud-close-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.hud-close-btn:hover {
+  background: var(--neon-crimson);
+  border-color: var(--neon-crimson);
+}
+
+.hud-scan-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--hud-card-bg);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+#hudWireframe {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  border: 1px dashed var(--neon-cyan);
+}
+
+.scan-telemetry-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #b2ebf2;
+}
+
+.scan-status-line {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.hud-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.hud-metric-card {
+  background: var(--hud-card-bg);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  padding: 10px 12px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 1.5px;
+  color: #80deea;
+}
+
+.metric-val {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  word-break: break-word;
+}
+
+.hud-history-section {
+  background: var(--hud-card-bg);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.history-heading {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  color: var(--neon-amber);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-history-text {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: #e0f7fa;
+}
+
+.hud-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-hud-action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-hud-primary {
+  background: var(--neon-cyan);
+  color: #04101e;
+  border: 1px solid var(--neon-cyan);
+  box-shadow: 0 0 15px var(--neon-cyan-glow);
+}
+
+.btn-hud-primary:hover {
+  background: #ffffff;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+}
+
+.btn-hud-secondary {
+  background: transparent;
+  color: var(--neon-cyan);
+  border: 1px solid var(--hud-border);
+}
+
+.btn-hud-secondary:hover {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: var(--neon-cyan);
+}
+
+/* ==========================================================================
+   EVENT DECK BOTTOM TOOLBAR
+   ========================================================================== */
+.bottom-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.event-deck {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--hud-bg);
+  border: 1.5px solid var(--hud-border);
+  border-radius: 40px;
+  padding: 10px 22px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 0 30px var(--neon-cyan-glow);
+}
+
+.deck-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--neon-amber);
+  padding-right: 14px;
+  border-right: 1px solid rgba(0, 229, 255, 0.25);
+  white-space: nowrap;
+}
+
+.event-btn-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.event-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(12, 22, 40, 0.65);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  color: #e0f7fa;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.event-btn:hover {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: var(--neon-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px var(--neon-cyan-glow);
+}
+
+.event-btn.active {
+  background: var(--neon-cyan);
+  color: #04101e;
+  border-color: var(--neon-cyan);
+  font-weight: 700;
+  box-shadow: 0 0 20px var(--neon-cyan);
+}
+
+.event-icon {
+  font-size: 1rem;
+}
+
+.auto-events-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(6, 12, 24, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  padding: 6px 18px;
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #80deea;
+}
+
+.auto-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.auto-toggle-label input {
+  accent-color: var(--neon-cyan);
+  cursor: pointer;
+}
+
+.target-crosshair {
+  position: fixed;
+  display: none;
+  pointer-events: none;
+  z-index: 100;
+  transform: translate(-50%, -50%);
+}
+
+.crosshair-box {
+  width: 44px;
+  height: 44px;
+  border: 1px dashed var(--neon-cyan);
+  border-radius: 50%;
+  animation: rotateCrosshair 10s linear infinite;
+}
+
+.crosshair-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(4, 16, 30, 0.9);
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  margin-top: 4px;
+  box-shadow: 0 0 10px var(--neon-cyan-glow);
+}
+
+@keyframes rotateCrosshair {
+  to { transform: rotate(360deg); }
+}
+
+.broadcast-banner {
+  position: fixed;
+  top: 85px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-30px);
+  background: var(--hud-bg);
+  border: 1.5px solid var(--neon-amber);
+  box-shadow: 0 0 25px var(--neon-amber-glow);
+  padding: 12px 28px;
+  border-radius: 8px;
+  backdrop-filter: blur(20px);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 680px;
+  text-align: center;
+}
+
+.broadcast-banner.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.broadcast-banner.danger {
+  border-color: var(--neon-crimson);
+  box-shadow: 0 0 30px var(--neon-crimson-glow);
+}
+
+.banner-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--neon-amber);
+}
+
+.broadcast-banner.danger .banner-title {
+  color: var(--neon-crimson);
+}
+
+.banner-desc {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #e0f7fa;
+}
+
+@media (max-width: 1100px) {
+  .top-nav-bar { flex-wrap: wrap; }
+  .holo-hud-panel { width: calc(100vw - 40px); right: 20px; top: 140px; }
+  .combat-log-container { display: none; }
+  .event-deck { border-radius: 20px; flex-wrap: wrap; justify-content: center; }
+}

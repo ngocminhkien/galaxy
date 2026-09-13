@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COSMOS // OMNI-HORIZON 2.0 — Vũ Trụ Tương Tác 3D & Mini-Game Không Gian</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Thư viện Three.js và OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- VIEWPORT KHÔNG GIAN 3D THREE.JS -->
+  <div id="canvasContainer"></div>
+
+  <!-- HỒNG TÂM THEO DÕI MỤC TIÊU KHI HOVER -->
+  <div class="target-crosshair" id="targetCrosshair">
+    <div class="crosshair-box"></div>
+    <div class="crosshair-label" id="targetCrosshairLabel">LOCKING...</div>
+  </div>
+
+  <!-- BANNER PHỤ ĐỀ GIỌNG ĐỌC AI CHỈ HUY -->
+  <div class="pda-subtitle-banner" id="pdaSubtitleBanner">
+    <div class="pda-icon-wrap">
+      <div class="pda-wave-dot"></div>
+      <span class="pda-speaker-title">AI CHỈ HUY // COMMAND AI CORE</span>
+    </div>
+    <div class="pda-subtitle-text" id="pdaSubtitleText">Hệ thống đã đồng bộ. Sẵn sàng quan trắc vũ trụ.</div>
+  </div>
+
+  <!-- BANNER THÔNG BÁO DỊ THƯỜNG VŨ TRỤ KHẨN CẤP -->
+  <div class="broadcast-banner" id="broadcastBanner">
+    <span class="banner-title" id="bannerTitle">CẢNH BÁO DỊ THƯỜNG</span>
+    <p class="banner-desc" id="bannerDesc">Đang kết nối trạm thiên văn quan trắc...</p>
+  </div>
+
+  <!-- BẢNG NHẬT KÝ CHIẾN SỰ & KẾT QUẢ TÁC ĐỘNG THIÊN THỂ BÊN TRÁI -->
+  <div class="combat-log-container interactive" id="combatLogContainer">
+    <div class="combat-log-header">
+      <div class="log-indicator-dot"></div>
+      <span>NHẬT KÝ CHIẾN SỰ & THIÊN TAI</span>
+    </div>
+    <div class="combat-log-list" id="combatLogList">
+      <div class="log-entry info">
+        <div class="log-meta"><span class="log-tag">[KHỞI ĐỘNG]</span><span class="log-time">LIVE</span></div>
+        <div class="log-title">Trạm Radar Hoạt Động</div>
+        <div class="log-desc">Hệ thống cảm biến liên sao đã kết nối với 18 thiên thể và hạm đội.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUỒNG LÁI & HUD CHIẾN ĐẤU KHI LÁI PHI THUYỀN (FLIGHT COMBAT HUD) -->
+  <div class="flight-hud-overlay" id="flightHudOverlay">
+    <!-- Hồng tâm ngắm bắn trung tâm -->
+    <div class="flight-center-reticle">
+      <div class="reticle-circle"></div>
+      <div class="reticle-dot"></div>
+      <!-- Khung khóa mục tiêu tên lửa tự động (Homing Lock) -->
+      <div class="hud-lock-reticle" id="hudLockReticle">
+        <div class="lock-diamond"></div>
+        <span class="lock-tag">TARGET LOCKED [MISSILE READY]</span>
+      </div>
+    </div>
+
+    <!-- Cụm trạng thái Giáp & Máu bên góc trái -->
+    <div class="flight-bars-panel">
+      <div class="bar-row">
+        <span class="bar-label">KHIÊN (SHIELD):</span>
+        <div class="hud-bar-track">
+          <div class="hud-bar-fill shield-fill" id="playerShieldBar"></div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">VỎ THUYỀN (HULL):</span>
+        <div class="hud-bar-track">
+          <div class="hud-bar-fill hull-fill" id="playerHullBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Đồng hồ tốc độ & Tên lửa bên góc phải -->
+    <div class="flight-weapon-panel">
+      <div class="telemetry-item">
+        <span class="tel-label">VẬN TỐC HIỆN TẠI</span>
+        <span class="tel-val" id="playerSpeedVal">0 KM/H</span>
+      </div>
+      <div class="telemetry-item">
+        <span class="tel-label">NGƯ LÔI TỰ TÌM ĐƯỜNG (HOMING)</span>
+        <span class="tel-val" id="missileStatusText">READY TO FIRE</span>
+      </div>
+      <div class="telemetry-item">
+        <span class="tel-label" id="playerCombatScore">SCORE: 0</span>
+      </div>
+    </div>
+
+    <!-- Hướng dẫn phím điều khiển chiến đấu bên dưới -->
+    <div class="flight-controls-hint">
+      <span><strong>Rê Chuột:</strong> Đổi hướng bay</span> • 
+      <span><strong>W:</strong> Tiến</span> • 
+      <span><strong>S:</strong> Phanh dừng</span> • 
+      <span><strong>A / D:</strong> Đảo cánh</span> • 
+      <span><strong>Shift:</strong> Afterburner</span> • 
+      <span><strong>Chuột Trái / F:</strong> Pháo Plasma (Tự ngắm)</span> • 
+      <span><strong>Chuột Phải / E:</strong> Ngư lôi Homing (Tự khóa)</span> • 
+      <span><strong>C:</strong> Đổi Camera</span> • 
+      <span><strong>Esc:</strong> Rời buồng lái</span>
+    </div>
+  </div>
+
+  <!-- GIAO DIỆN CÔNG NGHỆ CAO CHÍNH (SCI-FI UI OVERLAY) -->
+  <div class="sci-fi-ui">
+    
+    <!-- THANH ĐIỀU HƯỚNG TRÊN CÙNG -->
+    <header class="top-nav-bar interactive">
+      <div class="brand-radar">
+        <div class="radar-spinner">
+          <div class="radar-dot"></div>
+        </div>
+        <div class="brand-text-wrap">
+          <div class="brand-title">COSMOS // OMNI-HORIZON 2.0</div>
+          <div class="brand-subtitle">QUANTUM STELLAR & COMBAT SIMULATOR</div>
+        </div>
+      </div>
+
+      <!-- Chuyển đổi quy mô không gian -->
+      <nav class="scale-switcher">
+        <button class="scale-btn active" data-scale="solar">HỆ MẶT TRỜI</button>
+        <button class="scale-btn" data-scale="exoplanets">NGOẠI HÀNH TINH</button>
+        <button class="scale-btn" data-scale="galaxy">ĐẠI NGÂN HÀ</button>
+      </nav>
+
+      <!-- Điều khiển tốc độ & âm thanh -->
+      <div class="controls-cluster">
+        <div class="time-controller">
+          <button class="speed-btn" data-speed="0">PAUSE</button>
+          <button class="speed-btn active" data-speed="1">1X</button>
+          <button class="speed-btn" data-speed="5">5X</button>
+          <button class="speed-btn" data-speed="20">20X</button>
+        </div>
+
+        <button class="hud-icon-btn" id="soundToggleBtn" title="Bật/Tắt âm thanh không gian">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- BẢNG HUD HOLOGRAM THÔNG TIN THIÊN THỂ BÊN PHẢI (DYNAMIC HOLO-TERMINAL) -->
+    <aside class="holo-hud-panel" id="holoHudPanel">
+      <div class="hud-header">
+        <div class="hud-title-wrap">
+          <span class="hud-target-badge">TARGET LOCKED • TELEMETRY SYNC</span>
+          <h2 class="hud-name" id="hudName">Mặt Trời</h2>
+          <span class="hud-type" id="hudType">Sao lùn vàng (G2V)</span>
+        </div>
+        <button class="hud-close-btn" id="hudCloseBtn" title="Đóng bảng">✕</button>
+      </div>
+
+      <!-- Mô hình quét 3D Wireframe Scan -->
+      <div class="hud-scan-section">
+        <canvas id="hudWireframe" width="90" height="90"></canvas>
+        <div class="scan-telemetry-text">
+          <span class="scan-status-line">AI AUTO-SCAN: ACTIVE</span>
+          <span>SPECTRAL PURITY: 99.8%</span>
+          <span>COMMAND AI CORE: CONNECTED</span>
+        </div>
+      </div>
+
+      <!-- Lưới thông số vật lý -->
+      <div class="hud-grid">
+        <div class="hud-metric-card">
+          <span class="metric-label">ĐƯỜNG KÍNH</span>
+          <span class="metric-val" id="hudDiameter">1,392,700 km</span>
+        </div>
+        <div class="hud-metric-card">
+          <span class="metric-label">KHỐI LƯỢNG</span>
+          <span class="metric-val" id="hudMass">1.989 × 10³⁰ kg</span>
+        </div>
+        <div class="hud-metric-card">
+          <span class="metric-label">NHIỆT ĐỘ</span>
+          <span class="metric-val" id="hudTemp">5,778 K</span>
+        </div>
+        <div class="hud-metric-card">
+          <span class="metric-label">KHOẢNG CÁCH</span>
+          <span class="metric-val" id="hudDist">0 km</span>
+        </div>
+        <div class="hud-metric-card">
+          <span class="metric-label">CHU KỲ QUỸ ĐẠO</span>
+          <span class="metric-val" id="hudPeriod">230 triệu năm</span>
+        </div>
+        <div class="hud-metric-card">
+          <span class="metric-label">THÀNH PHẦN KHÍ QUYỂN</span>
+          <span class="metric-val" id="hudAtmo">73% H, 25% He</span>
+        </div>
+      </div>
+
+      <!-- Lịch sử & Dữ liệu thiên văn -->
+      <div class="hud-history-section">
+        <div class="history-heading">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          LỊCH SỬ THIÊN VĂN & TƯ LIỆU
+        </div>
+        <p class="hud-history-text" id="hudHistory">
+          Hình thành cách đây 4.6 tỷ năm từ sự sụp đổ của tinh vân hydro cổ đại.
+        </p>
+      </div>
+
+      <div class="hud-actions">
+        <button class="btn-hud-action btn-hud-primary" id="hudWarpBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          WARP CAMERA
+        </button>
+        <button class="btn-hud-action btn-hud-secondary" id="hudScanBtn">
+          QUÉT LẠI
+        </button>
+      </div>
+    </aside>
+
+    <!-- THANH CHỌN SỰ KIỆN VIỄN TƯỞNG DƯỚI CÙNG (EVENT DECK) -->
+    <div class="bottom-dock interactive">
+      <div class="event-deck">
+        <div class="deck-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          SỰ KIỆN & CHIẾN THUẬT:
+        </div>
+
+        <div class="event-btn-list">
+          <!-- NÚT ĐẶC BIỆT: LÁI CHIẾN HẠM MINI-GAME -->
+          <button class="event-btn player-ship-btn" data-event="player_ship" title="Triệu hồi & Trực tiếp lái phi thuyền chiến đấu!">
+            <span class="event-icon">🚀</span>
+            <span>LÁI CHIẾN HẠM</span>
+          </button>
+
+          <button class="event-btn" data-event="fleet" title="Triệu hồi 2 hạm đội Alien có thanh máu 3D tự chiến đấu">
+            <span class="event-icon">🛸</span>
+            <span>HẠM ĐỘI ALIEN</span>
+          </button>
+
+          <button class="event-btn" data-event="supernova" title="Kích nổ Siêu tân tinh phá hủy thiên thể lân cận">
+            <span class="event-icon">💥</span>
+            <span>SIÊU TÂN TINH</span>
+          </button>
+
+          <button class="event-btn" data-event="blackhole" title="Hố đen vũ trụ hút và xé toạc các hành tinh">
+            <span class="event-icon">🕳️</span>
+            <span>HỐ ĐEN VŨ TRỤ</span>
+          </button>
+
+          <button class="event-btn" data-event="solarflare" title="Bùng phát bão từ mặt trời CME gây bỏng rát">
+            <span class="event-icon">☀️</span>
+            <span>BÃO MẶT TRỜI</span>
+          </button>
+
+          <button class="event-btn" data-event="meteor" title="Mưa thiên thạch oanh tạc làm vỡ vụn thiên thể">
+            <span class="event-icon">☄️</span>
+            <span>MƯA THIÊN THẠCH</span>
+          </button>
+
+          <button class="event-btn" data-event="wormhole" title="Mở cổng không gian dịch chuyển">
+            <span class="event-icon">🌀</span>
+            <span>CỔNG LỖ SÂU</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="auto-events-row">
+        <label class="auto-toggle-label">
+          <input type="checkbox" id="autoEventToggle" checked>
+          <span>Tự động sinh biến cố vũ trụ ngẫu nhiên</span>
+        </label>
+        <span>|</span>
+        <span>Nhấp vào thiên thể bất kỳ để kích hoạt AI Auto-Scan với giọng đọc phân tích không gian!</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CÁC TỆP MÃ NGUỒN COSMOS 2.0 -->
+  <script src="audio.js"></script>
+  <script src="pda_voice.js"></script>
+  <script src="celestial_damage.js"></script>
+  <script src="player_ship.js"></script>
+  <script src="fleet.js"></script>
+  <script src="events.js"></script>
+  <script src="cosmos.js"></script>
+</body>
+</html>
