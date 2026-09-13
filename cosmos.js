@@ -909,13 +909,32 @@ class CosmosApp {
   checkHover() {
     if (this.playerShip && this.playerShip.active) return; // Đang lái tàu thì không hover
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const meshes = this.planets.map(p => p.mesh);
+
+    // Chỉ lấy các hành tinh còn sống và chưa bị phá hủy
+    const activePlanets = this.planets.filter(p => {
+      if (p.destroyed) return false;
+      if (p.mesh.userData && p.mesh.userData.destroyed) return false;
+      if (!p.mesh.visible) return false;
+      if (this.damageManager && this.damageManager.isBodyDestroyed(p.mesh)) return false;
+      return true;
+    });
+    const meshes = activePlanets.map(p => p.mesh);
     const intersects = this.raycaster.intersectObjects(meshes, true);
 
-    if (intersects.length > 0) {
-      const hit = intersects[0].object;
+    for (let i = 0; i < intersects.length; i++) {
+      const hit = intersects[i].object;
+      if (!hit.visible || hit.userData.destroyed) continue;
+      if (hit.parent && (!hit.parent.visible || hit.parent.userData.destroyed)) continue;
+
       const key = hit.userData.dbKey || (hit.parent && hit.parent.userData.dbKey);
-      if (key && ASTRONOMICAL_DB[key]) {
+      if (!key) continue;
+
+      // Kiểm tra nếu thiên thể đã bị phá hủy thì bỏ qua không hover
+      if (this.damageManager && (this.damageManager.isKeyDestroyed(key) || this.damageManager.isBodyDestroyed(hit))) {
+        continue;
+      }
+
+      if (ASTRONOMICAL_DB[key]) {
         this.targetCrosshair.style.display = 'block';
         this.targetLabel.textContent = ASTRONOMICAL_DB[key].name;
         document.body.style.cursor = 'pointer';
@@ -932,20 +951,48 @@ class CosmosApp {
   checkSelection() {
     if (this.playerShip && this.playerShip.active) return;
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const meshes = this.planets.map(p => p.mesh);
+
+    // Chỉ lấy các hành tinh còn sống và chưa bị phá hủy
+    const activePlanets = this.planets.filter(p => {
+      if (p.destroyed) return false;
+      if (p.mesh.userData && p.mesh.userData.destroyed) return false;
+      if (!p.mesh.visible) return false;
+      if (this.damageManager && this.damageManager.isBodyDestroyed(p.mesh)) return false;
+      return true;
+    });
+    const meshes = activePlanets.map(p => p.mesh);
     const intersects = this.raycaster.intersectObjects(meshes, true);
 
-    if (intersects.length > 0) {
-      const hit = intersects[0].object;
+    for (let i = 0; i < intersects.length; i++) {
+      const hit = intersects[i].object;
+      if (!hit.visible || hit.userData.destroyed) continue;
+      if (hit.parent && (!hit.parent.visible || hit.parent.userData.destroyed)) continue;
+
       const key = hit.userData.dbKey || (hit.parent && hit.parent.userData.dbKey);
-      if (key && ASTRONOMICAL_DB[key]) {
+      if (!key) continue;
+
+      // KIỂM TRA: Nếu thiên thể đã bị phá hủy thì tuyệt đối không cho nhấn để xem thông tin
+      if (this.damageManager && (this.damageManager.isKeyDestroyed(key) || this.damageManager.isBodyDestroyed(hit))) {
+        continue;
+      }
+
+      if (ASTRONOMICAL_DB[key]) {
         this.selectAndAutoScan(key, hit);
+        return;
       }
     }
   }
 
   // Tự động quét khi click vào hành tinh
   selectAndAutoScan(key, mesh) {
+    // Không cho phép quét hoặc mở thông tin nếu thiên thể đã bị phá hủy
+    if (this.damageManager && (this.damageManager.isKeyDestroyed(key) || this.damageManager.isBodyDestroyed(mesh))) {
+      return;
+    }
+    if (mesh.userData?.destroyed || (mesh.parent && mesh.parent.userData?.destroyed)) {
+      return;
+    }
+
     const data = ASTRONOMICAL_DB[key];
     this.currentFocusTarget = mesh;
 
@@ -965,7 +1012,7 @@ class CosmosApp {
     // 2. Camera trượt mượt mà đến góc quan sát
     this.warpCameraToTarget(mesh);
 
-    // 3. Giọng AI Subnautica tự động quét và đọc thông tin!
+    // 3. Giọng AI Chỉ Huy tự động quét và đọc thông tin!
     if (window.pdaVoice) {
       window.pdaVoice.onScanPlanet(data.name, key);
     }
@@ -975,6 +1022,19 @@ class CosmosApp {
 
     if (this.damageManager) {
       this.damageManager.logImpact('QUÉT THIÊN THỂ TỰ ĐỘNG', `Hệ thống quang phổ đã phân tích thành công [${data.name}]. Dữ liệu đã đồng bộ.`, 'info');
+    }
+  }
+
+  // Xử lý khi một thiên thể bị phá hủy: đóng HUD nếu đang xem thiên thể đó
+  onCelestialDestroyed(key) {
+    const focusKey = this.currentFocusTarget ? 
+      (this.currentFocusTarget.userData?.dbKey || this.currentFocusTarget.parent?.userData?.dbKey) : null;
+    
+    if (focusKey === key || key === 'sun') {
+      this.currentFocusTarget = null;
+      if (this.hudPanel) this.hudPanel.classList.remove('active');
+      if (this.targetCrosshair) this.targetCrosshair.style.display = 'none';
+      document.body.style.cursor = 'default';
     }
   }
 
@@ -1072,7 +1132,7 @@ class CosmosApp {
     this.hudScanBtn.addEventListener('click', () => {
       if (window.CosmosAudio) window.CosmosAudio.playUiBeep(1600);
       this.showBroadcast('QUÉT NĂNG LƯỢNG CAO CẤP', 'Dữ liệu quang phổ học và thành phần từ trường đã được đồng bộ.', 'info');
-      if (window.pdaVoice) window.pdaVoice.speak("Deep spectral analysis complete. Data synchronized.", "[PDA AI] \"Deep spectral scan synchronized to ship logs.\"");
+      if (window.pdaVoice) window.pdaVoice.speak("Deep spectral analysis complete. Data synchronized.", "[AI CHỈ HUY] \"Dữ liệu quang phổ đã đồng bộ vào nhật ký hạm đội.\"");
     });
 
     // Scale Switchers

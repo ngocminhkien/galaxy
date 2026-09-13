@@ -71,6 +71,9 @@ class CelestialDamageManager {
   // --- HỦY DIỆT THIÊN THỂ (SHATTER PLANET) ---
   shatterPlanet(state, epicenter) {
     state.destroyed = true;
+    state.mesh.userData.destroyed = true;
+    if (state.item) state.item.destroyed = true;
+
     const mesh = state.mesh;
     const worldPos = new THREE.Vector3();
     mesh.getWorldPosition(worldPos);
@@ -81,12 +84,21 @@ class CelestialDamageManager {
       return;
     }
 
-    // Với hành tinh thông thường: vỡ vụn thành vành đai thiên thạch
+    // Với hành tinh thông thường: ẩn toàn bộ mesh và các con, đánh dấu đã bị hủy
     mesh.visible = false;
+    mesh.traverse(child => {
+      child.visible = false;
+      child.userData.destroyed = true;
+    });
     if (mesh.cloudLayer) mesh.cloudLayer.visible = false;
     if (mesh.moonMesh) mesh.moonMesh.visible = false;
     if (mesh.europaMesh) mesh.europaMesh.visible = false;
     if (mesh.titanMesh) mesh.titanMesh.visible = false;
+
+    // Đóng giao diện Hologram HUD nếu người chơi đang xem hành tinh này
+    if (window.cosmos) {
+      window.cosmos.onCelestialDestroyed(state.dbKey);
+    }
 
     const fragmentCount = 65;
     const radius = mesh.geometry.parameters.radius || 6;
@@ -161,13 +173,24 @@ class CelestialDamageManager {
   // ==========================================================================
   triggerSolarCollapse(sunState, worldPos) {
     this.sunDestroyed = true;
+    sunState.destroyed = true;
+    sunState.mesh.userData.destroyed = true;
+    if (sunState.item) sunState.item.destroyed = true;
+
     const mesh = sunState.mesh;
     mesh.visible = false;
 
-    // 1. TẮT NGUỒN SÁNG MẶT TRỜI & TOÀN BỘ HỆ CHÌM VÀO BÓNG TỐI TUYỆT ĐỐI
+    // 1. TẮT NGUỒN SÁNG MẶT TRỜI, ẨN QUẦNG NHẬT HOA VÀ TOÀN BỘ HỆ CHÌM VÀO BÓNG TỐI
     mesh.traverse(child => {
+      child.visible = false;
+      child.userData.destroyed = true;
       if (child.isPointLight) child.intensity = 0;
     });
+
+    // Đóng giao diện Hologram HUD nếu đang mở xem Mặt Trời
+    if (window.cosmos) {
+      window.cosmos.onCelestialDestroyed('sun');
+    }
 
     // Giảm ánh sáng môi trường để hệ Mặt Trời rơi vào đêm đen vĩnh cửu
     this.scene.traverse(obj => {
@@ -275,6 +298,26 @@ class CelestialDamageManager {
     while (this.logContainer.children.length > 25) {
       this.logContainer.removeChild(this.logContainer.lastChild);
     }
+  }
+
+  isBodyDestroyed(mesh) {
+    if (!mesh) return false;
+    if (mesh.userData && mesh.userData.destroyed) return true;
+    if (mesh.parent && mesh.parent.userData && mesh.parent.userData.destroyed) return true;
+    const state = this.planetsState.get(mesh);
+    if (state && state.destroyed) return true;
+    const key = mesh.userData?.dbKey || mesh.parent?.userData?.dbKey;
+    if (key && this.isKeyDestroyed(key)) return true;
+    return false;
+  }
+
+  isKeyDestroyed(key) {
+    if (!key) return false;
+    if (key === 'sun' && this.sunDestroyed) return true;
+    for (const [m, state] of this.planetsState) {
+      if (state.dbKey === key && state.destroyed) return true;
+    }
+    return false;
   }
 }
 
